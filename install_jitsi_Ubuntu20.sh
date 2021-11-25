@@ -1,5 +1,13 @@
 !/bin/bash
 
+#--------------------------------
+# BASIC JITSI INSTALL IN 1 GO
+# TO CONFIGURE DNS, SSL etc.: later manually: https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart
+# TBD: Load balancing & scaling up ...
+# *** TESTED ONLY ON UBUNTU 20 SERVER
+#--------------------------------
+
+# Install dependencies and sys configuration
 sudo apt update -y
 sudo apt upgrade -y
 sudo apt install gnupg2 nginx-full openjdk-11-jdk apt-transport-https -y
@@ -10,6 +18,7 @@ curl https://download.jitsi.org/jitsi-key.gpg.key | sudo sh -c 'gpg --dearmor > 
 echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | sudo tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
 sudo apt update -y
 
+# Configuring firewall
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw allow 4443/tcp
@@ -20,8 +29,10 @@ sudo ufw allow 5349/tcp
 sudo ufw enable
 sudo ufw status verbose
 
+# Installing jitsi meet core 
 sudo apt install jitsi-meet -y
 
+# Fixing some jitsi config files
 BLUE='\033[0;34m'
 YELLOW='\033[0;33m'
 GREEN='\033[0;32m'
@@ -36,12 +47,9 @@ l2_prefix="org.ice4j.ice.harvest.NAT_HARVESTER_PUBLIC_ADDRESS="
 l2_suffix="$(hostname -I | cut -f1 -d' ')"
 l2="$l2_prefix$l2_suffix"
 
-# echo "$l1"
-# echo "$l2"
-
-# check the file /etc/jitsi/videobridge/sip-communicator.properties contains these lines
-# if it contains, replace
-# if it doesn't Adding
+# -- check the file /etc/jitsi/videobridge/sip-communicator.properties contains these lines
+# -- if it contains, replace
+# -- if it doesn't Adding
 if grep -q "$l1_prefix" "/etc/jitsi/videobridge/sip-communicator.properties"
 then
 echo -e "${YELLOW}REPLACING the line${RESET}: \"$l1_prefix...\""
@@ -65,6 +73,7 @@ echo -e "${GREEN}Adding ...${RESET}"
 echo "$l2" | tee -a "/etc/jitsi/videobridge/sip-communicator.properties" > /dev/null
 fi
 
+# Restarting the system
 sudo systemctl restart prosody
 sudo systemctl restart jicofo
 sudo systemctl restart jitsi-videobridge2
